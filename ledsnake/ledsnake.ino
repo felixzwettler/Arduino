@@ -22,66 +22,66 @@ LedControl lc=LedControl(pin_lc_data , pin_lc_clk , pin_lc_load, 1);
 
 // === Globale Variablen ===
 short snake_pos[2] = {0,0};
-short snake_pos_davor[2][64] = {0};
-short snake_vektor[2] = {0,0};
-short snake_laenge = 1;
-short essen_pos[2] = {6,6};
-unsigned long zeit_aktuell = 0;
-unsigned long zeit_davor = 0;
+short snake_pos_prev[2][64] = {0};
+short snake_vector[2] = {0,0};
+short snake_length = 1;
+short food_pos[2] = {6,6};
+unsigned long time_current = 0;
+unsigned long time_prev = 0;
 int game_over_status = 0;
 
 // === Funktionen ===
-void snake_vektor_aktualisieren(int js_x, int js_y){
-  int snake_vektor_davor_x = snake_vektor[0];
-  int snake_vektor_davor_y = snake_vektor[1];
+void snake_vector_update(int js_x, int js_y){
+  int snake_vector_prev_x = snake_vector[0];
+  int snake_vector_prev_y = snake_vector[1];
   
   if(js_x > (512 - js_x_offset) + js_deadzone){
-    snake_vektor[0] = 1;
-    snake_vektor[1] = 0;
+    snake_vector[0] = 1;
+    snake_vector[1] = 0;
   }
   else if(js_x < (512 - js_x_offset) - js_deadzone){
-    snake_vektor[0] = -1;
-    snake_vektor[1] = 0;
+    snake_vector[0] = -1;
+    snake_vector[1] = 0;
   }
   else if(js_y > (512 - js_y_offset) + js_deadzone){
-    snake_vektor[0] = 0;
-    snake_vektor[1] = 1;
+    snake_vector[0] = 0;
+    snake_vector[1] = 1;
   }
   else if(js_y < (512 - js_y_offset) - js_deadzone){
-    snake_vektor[0] = 0;
-    snake_vektor[1] = -1;
+    snake_vector[0] = 0;
+    snake_vector[1] = -1;
   }
-  if(snake_vektor[0] != 0 && snake_vektor[0] == (-1) * snake_vektor_davor_x){
-    snake_vektor[0] = snake_vektor_davor_x;
+  if(snake_vector[0] != 0 && snake_vector[0] == (-1) * snake_vector_prev_x){
+    snake_vector[0] = snake_vector_prev_x;
   }
-  if(snake_vektor[1] != 0 && snake_vektor[1] == (-1) * snake_vektor_davor_y){
-    snake_vektor[1] = snake_vektor_davor_y;
+  if(snake_vector[1] != 0 && snake_vector[1] == (-1) * snake_vector_prev_y){
+    snake_vector[1] = snake_vector_prev_y;
   }
 }
 
-int snake_bewegung(int snake_pos, int snake_vektor){
-  if(snake_pos + snake_vektor > 7){
+int snake_move(int snake_pos, int snake_vector){
+  if(snake_pos + snake_vector > 7){
     snake_pos = 0;
   }
-  else if(snake_pos + snake_vektor < 0){
+  else if(snake_pos + snake_vector < 0){
     snake_pos = 7;
   }
   else {
-    snake_pos = snake_pos + snake_vektor;
+    snake_pos = snake_pos + snake_vector;
   }
   return snake_pos;
 }
 
-void lc_zeichnen(void){
+void lc_draw(void){
   int i;
   int j;
   int k;
   lc.clearDisplay(0);
   lc.setLed(0, snake_pos[1], snake_pos[0], true);
-  lc.setLed(0, essen_pos[1], essen_pos[0], true);
-  for(k = 1; k < snake_laenge; k++){
-    if(k < snake_laenge){
-      lc.setLed(0, snake_pos_davor[1][k], snake_pos_davor[0][k], true);
+  lc.setLed(0, food_pos[1], food_pos[0], true);
+  for(k = 1; k < snake_length; k++){
+    if(k < snake_length){
+      lc.setLed(0, snake_pos_prev[1][k], snake_pos_prev[0][k], true);
     }
   }
 }
@@ -90,43 +90,43 @@ void reset(void){
   int i;
   int j;
   lc.clearDisplay(0);
-  delay( 5 * spielgeschw);
+  delay( 5 * gamespeed);
   for(i = 0; i < 8; i++){
     for(j = 0; j < 8; j++){
       lc.setLed(0, j, i, true);
     }
   }
-  delay( 5 * spielgeschw);
+  delay( 5 * gamespeed);
   snake_pos[0] = 0;
   snake_pos[1] = 0;
   for(i = 0; i < 64; i++){
-    snake_pos_davor[0][i] = 0;
-    snake_pos_davor[1][i] = 0;
+    snake_pos_prev[0][i] = 0;
+    snake_pos_prev[1][i] = 0;
   }
-  snake_vektor[0] = 0;
-  snake_vektor[1] = 0;
-  snake_laenge = 1;
-  essen_pos_erzeugen();
+  snake_vector[0] = 0;
+  snake_vector[1] = 0;
+  snake_length = 1;
+  food_pos_create();
 }
 
-int kollision_abfrage(void){
+int collision_check(void){
   int i;
   int j;
-  for(i = 1; i < snake_laenge; i++){
-    if(snake_pos_davor[0][i] == snake_pos[0] && snake_pos_davor[1][i] == snake_pos[1]){
+  for(i = 1; i < snake_length; i++){
+    if(snake_pos_prev[0][i] == snake_pos[0] && snake_pos_prev[1][i] == snake_pos[1]){
       return 1;
     }
   }
   return 0;
 }
 
-void essen_pos_erzeugen(void){
+void food_pos_create(void){
   int i;
-  essen_pos[0] = rand() % 8;
-  essen_pos[1] = rand() % 8;
-  for( i = 0; i < snake_laenge; i++){
-    if(essen_pos[0] == snake_pos_davor[0][i] && essen_pos[0] == snake_pos_davor[0][i]){
-      essen_pos_erzeugen();
+  food_pos[0] = rand() % 8;
+  food_pos[1] = rand() % 8;
+  for( i = 0; i < snake_length; i++){
+    if(food_pos[0] == snake_pos_prev[0][i] && food_pos[0] == snake_pos_prev[0][i]){
+      food_pos_create();
     }
   }
 }
@@ -140,7 +140,7 @@ void setup() {
   Serial.println("=== Arduino ist bereit! ===");
   pinMode(pin_js_x, INPUT);
   pinMode(pin_js_x, INPUT);
-  essen_pos_erzeugen();
+  food_pos_create();
 }
 
 // === loop() ===
@@ -152,47 +152,47 @@ void loop() {
   js_x = analogRead(pin_js_x);
   js_y = analogRead(pin_js_y);
   
-  snake_vektor_aktualisieren(js_x, js_y);
-  zeit_aktuell = millis();
+  snake_vector_update(js_x, js_y);
+  time_current = millis();
   
-  if( zeit_aktuell - zeit_davor > spielgeschw ){
-    zeit_davor = zeit_aktuell;
+  if( time_current - time_prev > gamespeed ){
+    time_prev = time_current;
     int i;
     
-    snake_pos[0] = snake_bewegung(snake_pos[0], snake_vektor[0]);
-    snake_pos[1] = snake_bewegung(snake_pos[1], snake_vektor[1]);
+    snake_pos[0] = snake_move(snake_pos[0], snake_vector[0]);
+    snake_pos[1] = snake_move(snake_pos[1], snake_vector[1]);
     for(i = 63; i > 0; i--){
-      snake_pos_davor[0][i] = snake_pos_davor[0][i - 1];
-      snake_pos_davor[1][i] = snake_pos_davor[1][i - 1];
+      snake_pos_prev[0][i] = snake_pos_prev[0][i - 1];
+      snake_pos_prev[1][i] = snake_pos_prev[1][i - 1];
     }
-    snake_pos_davor[0][0] = snake_pos[0];
-    snake_pos_davor[1][0] = snake_pos[1];
+    snake_pos_prev[0][0] = snake_pos[0];
+    snake_pos_prev[1][0] = snake_pos[1];
 
-    if(snake_pos[0] == essen_pos[0] && snake_pos[1] == essen_pos[1]){
-      essen_pos_erzeugen();
-      snake_laenge = snake_laenge + 1;
+    if(snake_pos[0] == food_pos[0] && snake_pos[1] == food_pos[1]){
+      food_pos_create();
+      snake_length = snake_length + 1;
     }
 
-    game_over_status = kollision_abfrage();
+    game_over_status = collision_check();
     if(game_over_status == 1){
       reset();
       game_over_status = 0;
     }
     
-    lc_zeichnen();
+    lc_draw();
     
     // === Debugging ===
     Serial.print("js: ");
     Serial.print(js_x);
     Serial.println(js_y);
     Serial.print("snake_laenge: ");
-    Serial.println(snake_laenge);
+    Serial.println(snake_length);
     Serial.print("snake_pos[]: ");
     Serial.print(snake_pos[0]);
     Serial.println(snake_pos[1]);
     Serial.print("snake_pos_davor[][1]: ");
-    Serial.print(snake_pos_davor[0][1]);
-    Serial.println(snake_pos_davor[1][1]);
+    Serial.print(snake_pos_prev[0][1]);
+    Serial.println(snake_pos_prev[1][1]);
     Serial.println();
     
   }
