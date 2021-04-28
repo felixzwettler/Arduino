@@ -11,7 +11,7 @@
 #define pin_js_y A1
 #define pin_js_sw 5
 
-#define spielgeschw 500
+#define gamespeed 500
 
 #define js_deadzone 200
 #define js_x_offset 0
